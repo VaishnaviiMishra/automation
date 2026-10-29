@@ -59,7 +59,7 @@ import { assertUseCases, attachUseCaseSummary, type UseCaseCheck } from '../../u
 
 test('contracts for the requested store come back', async ({ request }, testInfo) => {
   const ctx = createTestContext();
-  const response = await request.get(ctx.url('getContractsByStoreAndDate'), { headers: ctx.headers });
+  const response = await request.get(ctx.url('getContractsByType'), { headers: ctx.headers });
   const body = await response.json();
 
   const checks: UseCaseCheck[] = [

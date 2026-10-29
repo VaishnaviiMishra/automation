@@ -3,7 +3,7 @@
  *
  * Datasets live under `test-data/datasets/{env}/{country}/{store}/`.
  * Per-endpoint request params live in the dataset JSON under `params`
- * (e.g. data/loanwalk/getContractsByStoreAndDate.json).
+ * (e.g. data/loanwalk/getContractsByType.json).
  *
  * Configured for now: stg / usa / 23005.
  */
@@ -186,7 +186,7 @@ export function resolveEnvsForPilot(defaultEnvs: string[]): string[] {
  * True when `test-data/datasets/{env}/{country}/{store}/data/{dataKey}.json` exists.
  * Use in pilot loops so missing store datasets are skipped (not failed).
  *
- * @example dataKey: 'loanwalk/getContractsByStoreAndDate'
+ * @example dataKey: 'loanwalk/getContractsByType'
  */
 export function datasetExists(options: {
   env?: string;
