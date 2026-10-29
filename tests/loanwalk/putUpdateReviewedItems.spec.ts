@@ -59,9 +59,17 @@ type UpdateDataset = {
 };
 
 type ScreenSizeHit = {
-  value: string;
+  /** Size the next PUT should treat as current. A reviewed newVal wins over the original inventory value. */
+  current: string;
   source: string;
   itemEzId: string;
+  inventoryValue?: string;
+  reviewValue?: string;
+};
+
+type ScreenSizeUpdate = {
+  oldVal: string;
+  newVal: string;
 };
 
 function pad(value: number): string {
@@ -107,21 +115,25 @@ function readScreenSize(
 
   for (const item of ordered) {
     const id = String(item.ezId ?? item.inventoryItem?.ezid ?? '');
-    const inventory = featureValue(item.inventoryItem?.features, attributeKey, 'attributeValue');
-    if (inventory) {
-      return { value: inventory, source: 'inventoryItem.features.attributeValue', itemEzId: id };
-    }
-    const reviewed = featureValue(item.review?.itemChanges?.features, attributeKey, 'newVal');
-    if (reviewed) {
-      return { value: reviewed, source: 'review.itemChanges.features.newVal', itemEzId: id };
-    }
+    const inventoryValue = featureValue(item.inventoryItem?.features, attributeKey, 'attributeValue');
+    const reviewValue = featureValue(item.review?.itemChanges?.features, attributeKey, 'newVal');
+    const current = reviewValue ?? inventoryValue;
+    if (!current) continue;
+    return {
+      current,
+      inventoryValue,
+      reviewValue,
+      itemEzId: id,
+      source: reviewValue ? 'review.itemChanges.features.newVal' : 'inventoryItem.features.attributeValue',
+    };
   }
   return undefined;
 }
 
-function alternateValue(current: string, values: [string, string]): string | undefined {
-  if (current === values[0]) return values[1];
-  if (current === values[1]) return values[0];
+/** 13 becomes 15, and 15 becomes 13. Anything else cannot be updated by this use case. */
+function decideScreenSizeUpdate(current: string): ScreenSizeUpdate | undefined {
+  if (current === '13') return { oldVal: '13', newVal: '15' };
+  if (current === '15') return { oldVal: '15', newVal: '13' };
   return undefined;
 }
 
@@ -153,7 +165,13 @@ test.describe('Loanwalk Update Reviewed Item Screen Size', () => {
           await testInfo.attach('GET before — request URL', { body: getUrl, contentType: 'text/plain' });
           await testInfo.attach('GET before — screen size', {
             body: before
-              ? `contractEzId ${contractEzId}\nitemEzId ${before.itemEzId}\nsource ${before.source}\nscreen size ${before.value}`
+              ? [
+                  `contractEzId ${contractEzId}`,
+                  `itemEzId ${before.itemEzId}`,
+                  `inventory attributeValue: ${before.inventoryValue ?? 'none'}`,
+                  `review newVal: ${before.reviewValue ?? 'none'}`,
+                  `current used for the update: ${before.current} (${before.source})`,
+                ].join('\n')
               : `contractEzId ${contractEzId} was not found or has no ${attributeKey}`,
             contentType: 'text/plain',
           });
@@ -169,31 +187,43 @@ test.describe('Loanwalk Update Reviewed Item Screen Size', () => {
 
           await test.step('GET current screen size for the contract', async () => {
             expect(beforeResponse.status()).toBe(200);
-            expect(before?.value).toBeTruthy();
+            expect(before?.current).toBeTruthy();
           });
 
-          const nextValue = before ? alternateValue(before.value, dataset.screenSizeValues) : undefined;
-          if (!before || !nextValue) {
+          const decision = before ? decideScreenSizeUpdate(before.current) : undefined;
+          if (!before || !decision) {
             throw new Error(
               `Test Failed: Current screen size cannot be toggled.\n` +
-                `Expected: ${attributeKey} is ${dataset.screenSizeValues.join(' or ')} on contract ${contractEzId}\n` +
-                `Received: ${before?.value ?? 'not found'}\n` +
-                `What should have been: The current value is 13 or 15 so the PUT can switch to the other one.`
+                `Expected: ${attributeKey} is 13 or 15 on contract ${contractEzId}\n` +
+                `Received: ${before?.current ?? 'not found'}\n` +
+                `What should have been: 13 is updated to 15, and 15 is updated to 13.`
             );
           }
+
+          await testInfo.attach('Update decision', {
+            body: [
+              `First GET current screen size: ${before.current}`,
+              before.current === '13'
+                ? 'Decision: current is 13, so PUT newVal 15 and the second GET must be 15'
+                : 'Decision: current is 15, so PUT newVal 13 and the second GET must be 13',
+              `oldVal: ${decision.oldVal}`,
+              `newVal: ${decision.newVal}`,
+            ].join('\n'),
+            contentType: 'text/plain',
+          });
 
           const stamps = reviewStamps();
           const requestBody = structuredClone(dataset.request);
           const feature = requestBody.item.itemChanges.features[0];
-          feature.oldVal = before.value;
-          feature.newVal = nextValue;
+          feature.oldVal = decision.oldVal;
+          feature.newVal = decision.newVal;
           requestBody.item.reviewedDttmLocation = stamps.location;
           requestBody.item.reviewedDttmUTC = stamps.utc;
           requestBody.item.itemChanges.scanDttm = stamps.utc;
           requestBody.item.itemChanges.dmwalkDttm = stamps.utc;
           const comment = requestBody.item.itemChanges.comments[0];
           comment.createdOn = stamps.utc;
-          comment.comments = `Screen size corrected from ${before.value} to ${nextValue}`;
+          comment.comments = `Screen size corrected from ${decision.oldVal} to ${decision.newVal}`;
 
           await testInfo.attach('PUT request body', {
             body: JSON.stringify(requestBody, null, 2),
@@ -214,13 +244,13 @@ test.describe('Loanwalk Update Reviewed Item Screen Size', () => {
           if (putResponse.status() !== 200) {
             throw new Error(
               `Test Failed: PUT reviewed items did not return 200.\n` +
-                `Expected: 200 OK updating screen size ${before.value} → ${nextValue}\n` +
+                `Expected: 200 OK updating screen size ${decision.oldVal} → ${decision.newVal}\n` +
                 `Received: ${putResponse.status()}\n` +
                 `What should have been: The review update should accept the toggled screen size.`
             );
           }
 
-          await test.step(`PUT screen size from ${before.value} to ${nextValue}`, async () => {
+          await test.step(`PUT screen size from ${decision.oldVal} to ${decision.newVal}`, async () => {
             expect(putResponse.status()).toBe(200);
           });
 
@@ -231,30 +261,38 @@ test.describe('Loanwalk Update Reviewed Item Screen Size', () => {
 
           await testInfo.attach('GET after — screen size', {
             body: after
-              ? `contractEzId ${contractEzId}\nitemEzId ${after.itemEzId}\nsource ${after.source}\nscreen size ${after.value}`
+              ? [
+                  `contractEzId ${contractEzId}`,
+                  `itemEzId ${after.itemEzId}`,
+                  `inventory attributeValue: ${after.inventoryValue ?? 'none'}`,
+                  `review newVal: ${after.reviewValue ?? 'none'}`,
+                  `current after update: ${after.current} (${after.source})`,
+                  `expected: ${decision.newVal}`,
+                ].join('\n')
               : `contractEzId ${contractEzId} was not found or has no ${attributeKey}`,
             contentType: 'text/plain',
           });
 
-          if (afterResponse.status() !== 200 || after?.value !== nextValue) {
+          if (afterResponse.status() !== 200 || after?.current !== decision.newVal) {
             throw new Error(
               `Test Failed: Screen size did not update on the follow-up GET.\n` +
-                `Expected: ${attributeKey} ${nextValue} on contract ${contractEzId}\n` +
-                `Received: status ${afterResponse.status()}, screen size ${after?.value ?? 'not found'} (before was ${before.value})\n` +
-                `What should have been: The second GET should show the screen size that the PUT just wrote.`
+                `Expected: ${attributeKey} ${decision.newVal} on contract ${contractEzId}\n` +
+                `Received: status ${afterResponse.status()}, screen size ${after?.current ?? 'not found'} (before was ${decision.oldVal}, review newVal ${after?.reviewValue ?? 'none'}, inventory ${after?.inventoryValue ?? 'none'})\n` +
+                `What should have been: First GET ${decision.oldVal} means the PUT writes ${decision.newVal} and the second GET returns ${decision.newVal}.`
             );
           }
 
-          await test.step('GET again and confirm the screen size changed', async () => {
-            expect(after.value).toBe(nextValue);
+          await test.step(`GET again and confirm the screen size is ${decision.newVal}`, async () => {
+            expect(after.current).toBe(decision.newVal);
           });
 
           await testInfo.attach('Required Attributes Validated ✅', {
             body: [
               'Use case checks for GET → PUT → GET screen size:',
-              '✅ First GET returned 200 and the current screen size',
-              `✅ PUT sent ${before.value} → ${nextValue} and returned 200`,
-              `✅ Second GET screen size is ${after.value}`,
+              `✅ First GET current screen size is ${decision.oldVal}`,
+              `✅ Decision: ${decision.oldVal} updates to ${decision.newVal}`,
+              `✅ PUT returned 200`,
+              `✅ Second GET screen size is ${after.current}`,
             ].join('\n'),
             contentType: 'text/plain',
           });
@@ -267,10 +305,10 @@ test.describe('Loanwalk Update Reviewed Item Screen Size', () => {
               `contractEzId: ${contractEzId}`,
               `itemEzId: ${itemEzId}`,
               `attribute: ${attributeKey}`,
-              `Before: ${before.value} (${before.source})`,
-              `PUT: ${before.value} → ${nextValue}`,
-              `After: ${after.value} (${after.source})`,
-              `Match: ${before.value} updated to ${after.value}`,
+              `Before current: ${before.current} (${before.source})`,
+              `Decision: ${decision.oldVal} → ${decision.newVal}`,
+              `After current: ${after.current} (${after.source})`,
+              `Match: second GET is ${decision.newVal}`,
             ].join('\n'),
             contentType: 'text/plain',
           });
