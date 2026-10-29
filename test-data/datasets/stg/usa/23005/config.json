@@ -1,0 +1,10 @@
+{
+  "baseUrl": "https://services.stg.ezcorp.com",
+  "apiKeyEnvVar": "STG_SHOWCASE_API_KEY",
+  "storeId": "23005",
+  "label": "STG store 23005",
+  "defaultHeaders": {
+    "Accept-Language": "en-US",
+    "application-name": "LANA"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "storeId": "23005",
+  "params": {
+    "storeId": "23005",
+    "contractType": "Loan",
+    "fromDate": "2026/02/20",
+    "toDate": "2026/02/20",
+    "pageNo": "1",
+    "pageSize": "100"
+  }
+}
