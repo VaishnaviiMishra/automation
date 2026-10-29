@@ -4,7 +4,10 @@
  * Add a key here when a new use-case spec needs a route.
  */
 
-export type EndpointKey = 'getContractsByType' | 'postReviewedItemPriceDrop';
+export type EndpointKey =
+  | 'getContractsByType'
+  | 'postReviewedItemPriceDrop'
+  | 'putUpdateReviewedItems';
 
 export type EndpointTemplate = {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -26,6 +29,12 @@ export const endpoints = {
     method: 'POST',
     path: '/loanwalk/reviewedItems/store/{storeId}',
     requiredParams: ['storeId'],
+    domain: 'loanwalk',
+  },
+  putUpdateReviewedItems: {
+    method: 'PUT',
+    path: '/loanwalk/reviewedItems/v2',
+    requiredParams: [],
     domain: 'loanwalk',
   },
 } as const satisfies Record<EndpointKey, EndpointTemplate>;

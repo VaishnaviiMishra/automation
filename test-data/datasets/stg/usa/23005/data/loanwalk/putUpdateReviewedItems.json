@@ -1,0 +1,52 @@
+{
+  "contractEzId": "0324222",
+  "itemEzId": "230054002168",
+  "screenSizeAttributeKey": "Screen size (inches)",
+  "screenSizeValues": ["13", "15"],
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "request": {
+    "cartContext": {
+      "employeeEzId": "600004510",
+      "locationEzId": "23005"
+    },
+    "item": {
+      "itemEzId": "230054002168",
+      "contractType": "LOAN",
+      "contractEzId": "0324222",
+      "reviewStatus": "REVIEWED",
+      "reviewedDttmLocation": "2026-10-28 06:51:00",
+      "reviewedDttmUTC": "2026-10-28 11:51:00",
+      "itemChanges": {
+        "isFirearmCertified": null,
+        "fields": [],
+        "features": [
+          {
+            "oldVal": "13",
+            "newVal": "15",
+            "modifiedByEmpRole": 168020,
+            "featureType": "SL",
+            "listId": "1218",
+            "elementId": null,
+            "isDeleted": null,
+            "attributeKey": "Screen size (inches)",
+            "objectId": "1167325125"
+          }
+        ],
+        "stones": [],
+        "comments": [
+          {
+            "createdOn": "2026-10-28 11:51:00",
+            "commentedBy": 600004510,
+            "comments": "Screen size corrected from 13 to 15",
+            "type": "USER"
+          }
+        ],
+        "media": null,
+        "scanDttm": "2026-10-28 11:51:00",
+        "dmwalkDttm": "2026-10-28 11:51:00"
+      }
+    }
+  }
+}
