@@ -1,15 +1,5 @@
 {
-  "storeId": "23005",
   "params": {
     "storeId": "23005"
-  },
-  "headers": {
-    "Content-Type": "application/json",
-    "application-name": "EZwalk",
-    "Accept-Language": "en-US"
-  },
-  "request": {
-    "loanEzIds": ["0324222"],
-    "requireDropPrice": true
   }
 }

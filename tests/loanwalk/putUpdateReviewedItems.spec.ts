@@ -11,8 +11,9 @@ const GET_ENDPOINT_KEY = 'getContractsByType' as const;
 const POST_ENDPOINT_KEY = 'postReviewedItemPriceDrop' as const;
 const PUT_ENDPOINT_KEY = 'putUpdateReviewedItems' as const;
 const GET_DATA_KEY = 'loanwalk/getContractsByType';
-const POST_DATA_KEY = 'loanwalk/postReviewedItemPriceDrop';
 const PUT_DATA_KEY = 'loanwalk/putUpdateReviewedItems';
+/** Params-only stub so `ctx.url(postReviewedItemPriceDrop)` resolves the store path. */
+const POST_PARAMS_KEY = 'loanwalk/postReviewedItemPriceDrop';
 
 const PILOT_ENVS = ['stg'];
 const PILOT_COUNTRIES = ['usa'];
@@ -49,22 +50,18 @@ type LoanContract = {
   items?: ContractItem[];
 };
 
-type PostPriceDropDataset = {
-  storeId: string;
-  headers?: Record<string, string>;
-  request: {
-    loanEzIds: string[];
-    requireDropPrice: boolean;
-  };
-};
-
 type UpdateDataset = {
+  storeId: string;
   contractEzId: string;
   itemEzId: string;
   screenSizeAttributeKey: string;
   screenSizeValues: [string, string];
   expectedDropPriceByScreenSize: Record<string, number>;
-  headers?: Record<string, string>;
+  post: {
+    headers?: Record<string, string>;
+    requireDropPrice: boolean;
+  };
+  putHeaders?: Record<string, string>;
   request: {
     cartContext: { employeeEzId: string; locationEzId: string };
     item: {
@@ -322,35 +319,34 @@ function assertPostReviewTimesMatchFlow(item: ReviewedItem, stamps: FlowStamps):
   }
 }
 
-test.describe('Loanwalk review flow (GET → POST → PUT → GET → POST)', () => {
+test.describe('Loanwalk review flow (GET → POST → PUT+GET → POST)', () => {
   test.describe.configure({ timeout: 180_000 });
 
   for (const env of resolveEnvsForPilot(PILOT_ENVS)) {
     for (const country of resolveCountriesForPilot(PILOT_COUNTRIES)) {
       for (const store of resolveStoresForPilot(STORE_MAP[country] ?? [])) {
         if (!datasetExists({ env, country, store, dataKey: GET_DATA_KEY })) continue;
-        if (!datasetExists({ env, country, store, dataKey: POST_DATA_KEY })) continue;
+        if (!datasetExists({ env, country, store, dataKey: POST_PARAMS_KEY })) continue;
         if (!datasetExists({ env, country, store, dataKey: PUT_DATA_KEY })) continue;
 
         test(`Review flow — ENV=${env} COUNTRY=${country} STORE=${store}`, async ({ request }, testInfo) => {
           const ctx = createTestContext({ env, country, store });
-          const putDataset = ctx.data<UpdateDataset>(PUT_DATA_KEY);
-          const postDataset = ctx.data<PostPriceDropDataset>(POST_DATA_KEY);
+          const flow = ctx.data<UpdateDataset>(PUT_DATA_KEY);
 
           const getUrl = ctx.url(GET_ENDPOINT_KEY);
           const postUrl = ctx.url(POST_ENDPOINT_KEY);
           const putUrl = ctx.url(PUT_ENDPOINT_KEY);
           const getHeaders = ctx.headers;
-          const postHeaders = { ...ctx.headers, ...(postDataset.headers ?? {}) };
-          const putHeaders = { ...(putDataset.headers ?? {}), 'api-key': ctx.headers['api-key'] };
+          const postHeaders = { ...ctx.headers, ...(flow.post.headers ?? {}) };
+          const putHeaders = { ...(flow.putHeaders ?? {}), 'api-key': ctx.headers['api-key'] };
 
-          const contractEzId = putDataset.contractEzId;
-          const itemEzId = putDataset.itemEzId;
-          const attributeKey = putDataset.screenSizeAttributeKey;
-          const storeId = String(postDataset.storeId ?? store);
-          const postBodyBase = {
+          const contractEzId = flow.contractEzId;
+          const itemEzId = flow.itemEzId;
+          const attributeKey = flow.screenSizeAttributeKey;
+          const storeId = String(flow.storeId ?? store);
+          const postBody = {
             loanEzIds: [contractEzId],
-            requireDropPrice: postDataset.request.requireDropPrice,
+            requireDropPrice: flow.post.requireDropPrice,
           };
 
           // --- 1) GET contract ---
@@ -395,12 +391,12 @@ test.describe('Loanwalk review flow (GET → POST → PUT → GET → POST)', ()
           }
 
           // --- 2) POST drop price (before PUT) ---
-          const postBeforeRes = await request.post(postUrl, { headers: postHeaders, data: postBodyBase });
+          const postBeforeRes = await request.post(postUrl, { headers: postHeaders, data: postBody });
           const postBeforeBody = await postBeforeRes.json();
           const postBeforeItems = (postBeforeBody?.payload?.reviewedItems ?? []) as ReviewedItem[];
 
           await testInfo.attach('Step 2 — POST before body', {
-            body: JSON.stringify(postBodyBase, null, 2),
+            body: JSON.stringify(postBody, null, 2),
             contentType: 'application/json',
           });
 
@@ -417,15 +413,15 @@ test.describe('Loanwalk review flow (GET → POST → PUT → GET → POST)', ()
             assertDropPriceForScreen(
               postBeforeItems[0],
               beforeSize.current,
-              putDataset.expectedDropPriceByScreenSize,
+              flow.expectedDropPriceByScreenSize,
               storeId,
-              postBodyBase.loanEzIds
+              postBody.loanEzIds
             );
           });
 
-          // --- 3) PUT toggle screen size ---
+          // --- 3) PUT toggle screen size, then GET to verify the update ---
           const stamps = reviewStamps();
-          const putBody = structuredClone(putDataset.request);
+          const putBody = structuredClone(flow.request);
           const feature = putBody.item.itemChanges.features[0];
           feature.oldVal = decision.oldVal;
           feature.newVal = decision.newVal;
@@ -446,57 +442,40 @@ test.describe('Loanwalk review flow (GET → POST → PUT → GET → POST)', ()
             contentType: 'text/plain',
           });
 
-          const putRes = await request.put(putUrl, { headers: putHeaders, data: putBody });
-          if (putRes.status() !== 200) {
-            throw new Error(
-              `Test Failed: PUT did not return 200.\n` +
-                `Expected: 200 updating ${decision.oldVal} → ${decision.newVal}\n` +
-                `Received: ${putRes.status()}\n` +
-                `What should have been: PUT should persist the toggled screen size.`
-            );
-          }
+          let afterSize: ScreenSizeHit | undefined;
+          let afterTimes: ReviewTimes | undefined;
 
-          await test.step(`PUT screen size ${decision.oldVal} → ${decision.newVal}`, async () => {
+          await test.step(`PUT ${decision.oldVal} → ${decision.newVal} and verify on GET`, async () => {
+            const putRes = await request.put(putUrl, { headers: putHeaders, data: putBody });
             expect(putRes.status()).toBe(200);
-          });
 
-          // --- 4) GET again (screen + reviewDttm + createdOn) ---
-          const getAfterRes = await request.get(getUrl, { headers: getHeaders });
-          const getAfterBody = await getAfterRes.json();
-          const afterContracts = (getAfterBody?.payload?.contracts ?? []) as LoanContract[];
-          const afterSize = readScreenSize(afterContracts, contractEzId, itemEzId, attributeKey);
-          const afterTimes = readGetReviewTimes(afterContracts, contractEzId, itemEzId);
+            const getAfterRes = await request.get(getUrl, { headers: getHeaders });
+            const getAfterBody = await getAfterRes.json();
+            const afterContracts = (getAfterBody?.payload?.contracts ?? []) as LoanContract[];
+            afterSize = readScreenSize(afterContracts, contractEzId, itemEzId, attributeKey);
+            afterTimes = readGetReviewTimes(afterContracts, contractEzId, itemEzId);
 
-          await testInfo.attach('Step 4 — GET after screen & times', {
-            body: [
-              `screen: ${afterSize?.current ?? 'not found'} (expected ${decision.newVal})`,
-              `reviewDttm: ${afterTimes?.reviewDttm ?? 'none'}`,
-              `createdOn: ${afterTimes?.createdOn ?? 'none'}`,
-              `expected review UTC: ${stamps.utc}`,
-            ].join('\n'),
-            contentType: 'text/plain',
-          });
+            await testInfo.attach('Step 3 — GET after PUT (screen & times)', {
+              body: [
+                `screen: ${afterSize?.current ?? 'not found'} (expected ${decision.newVal})`,
+                `reviewDttm: ${afterTimes?.reviewDttm ?? 'none'}`,
+                `createdOn: ${afterTimes?.createdOn ?? 'none'}`,
+                `expected review UTC: ${stamps.utc}`,
+              ].join('\n'),
+              contentType: 'text/plain',
+            });
 
-          if (getAfterRes.status() !== 200 || afterSize?.current !== decision.newVal) {
-            throw new Error(
-              `Test Failed: Second GET screen size wrong.\n` +
-                `Expected: ${decision.newVal}\n` +
-                `Received: ${afterSize?.current ?? 'missing'}\n` +
-                `What should have been: GET after PUT should show the updated screen size.`
-            );
-          }
-
-          await test.step('GET again — screen size and review times', async () => {
-            expect(afterSize.current).toBe(decision.newVal);
+            expect(getAfterRes.status()).toBe(200);
+            expect(afterSize?.current).toBe(decision.newVal);
             assertGetReviewTimesMatchFlow(afterTimes, stamps);
           });
 
-          // --- 5) POST drop price again (after screen update) ---
-          const postAfterRes = await request.post(postUrl, { headers: postHeaders, data: postBodyBase });
+          // --- 4) POST drop price again (after screen update) ---
+          const postAfterRes = await request.post(postUrl, { headers: postHeaders, data: postBody });
           const postAfterBody = await postAfterRes.json();
           const postAfterItems = (postAfterBody?.payload?.reviewedItems ?? []) as ReviewedItem[];
 
-          await testInfo.attach('Step 5 — POST after response (summary)', {
+          await testInfo.attach('Step 4 — POST after response (summary)', {
             body: postAfterItems.length
               ? JSON.stringify(
                   {
@@ -526,20 +505,19 @@ test.describe('Loanwalk review flow (GET → POST → PUT → GET → POST)', ()
             assertDropPriceForScreen(
               postAfterItems[0],
               decision.newVal,
-              putDataset.expectedDropPriceByScreenSize,
+              flow.expectedDropPriceByScreenSize,
               storeId,
-              postBodyBase.loanEzIds
+              postBody.loanEzIds
             );
             assertPostReviewTimesMatchFlow(postAfterItems[0], stamps);
           });
 
           await testInfo.attach('Required Attributes Validated ✅', {
             body: [
-              'Loanwalk flow GET → POST → PUT → GET → POST:',
+              'Loanwalk flow GET → POST → PUT+GET → POST:',
               `✅ GET #1 screen size ${beforeSize.current}`,
               `✅ POST #1 dropPrice for screen ${beforeSize.current}`,
-              `✅ PUT ${decision.oldVal} → ${decision.newVal} at ${stamps.utc} UTC`,
-              `✅ GET #2 screen ${afterSize.current}, reviewDttm & createdOn match PUT`,
+              `✅ PUT ${decision.oldVal} → ${decision.newVal}; GET confirms screen, reviewDttm & createdOn`,
               `✅ POST #2 dropPrice for screen ${decision.newVal}, review times match PUT`,
             ].join('\n'),
             contentType: 'text/plain',
@@ -552,13 +530,13 @@ test.describe('Loanwalk review flow (GET → POST → PUT → GET → POST)', ()
               `contractEzId: ${contractEzId}`,
               `itemEzId: ${itemEzId}`,
               `Screen: ${decision.oldVal} → ${decision.newVal}`,
-              `Drop price (13): ${putDataset.expectedDropPriceByScreenSize['13']}`,
-              `Drop price (15): ${putDataset.expectedDropPriceByScreenSize['15']}`,
+              `Drop price (13): ${flow.expectedDropPriceByScreenSize['13']}`,
+              `Drop price (15): ${flow.expectedDropPriceByScreenSize['15']}`,
               `POST #1 dropPrice: ${postBeforeItems[0].dropPrice}`,
               `POST #2 dropPrice: ${postAfterItems[0].dropPrice}`,
               `PUT review UTC: ${stamps.utc}`,
-              `GET #2 reviewDttm: ${afterTimes?.reviewDttm}`,
-              `GET #2 createdOn: ${afterTimes?.createdOn}`,
+              `GET after PUT reviewDttm: ${afterTimes?.reviewDttm}`,
+              `GET after PUT createdOn: ${afterTimes?.createdOn}`,
               `POST #2 reviewDttm: ${postAfterItems[0].reviewDttm}`,
               `POST #2 createdOn: ${postAfterItems[0].itemChanges?.comments?.[0]?.createdOn}`,
             ].join('\n'),

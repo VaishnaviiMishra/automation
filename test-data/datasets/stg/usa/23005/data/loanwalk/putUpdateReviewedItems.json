@@ -1,4 +1,5 @@
 {
+  "storeId": "23005",
   "contractEzId": "0324222",
   "itemEzId": "230054002168",
   "screenSizeAttributeKey": "Screen size (inches)",
@@ -7,7 +8,15 @@
     "13": 229.99,
     "15": 229.99
   },
-  "headers": {
+  "post": {
+    "headers": {
+      "Content-Type": "application/json",
+      "application-name": "EZwalk",
+      "Accept-Language": "en-US"
+    },
+    "requireDropPrice": true
+  },
+  "putHeaders": {
     "Content-Type": "application/json"
   },
   "request": {
