@@ -135,25 +135,35 @@ function reviewStamps(now = new Date()): FlowStamps {
   return { instant: now, utc: formatUtcClock(now), location: formatLocationClock(now) };
 }
 
-/** Normalize review timestamps to UTC epoch ms (minute precision). */
+/**
+ * Normalize review timestamps to UTC epoch ms.
+ * PUT stamps and API strings without an offset are treated as UTC wall clock (not local TZ).
+ */
 function parseReviewTimeToUtcMs(value: string): number | undefined {
   const trimmed = value.trim();
-  const isoLike = trimmed.replace(/(\+\d{4})$/, '+00:00').replace(' ', 'T');
-  let parsed = Date.parse(isoLike);
-  if (!Number.isNaN(parsed)) return parsed;
+
+  const dashSpace = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/.exec(trimmed);
+  if (dashSpace) {
+    const [, yyyy, mm, dd, hh, min, sec] = dashSpace;
+    return Date.UTC(Number(yyyy), Number(mm) - 1, Number(dd), Number(hh), Number(min), Number(sec));
+  }
 
   const slash = /^(\d{1,2})\/(\d{1,2})\/(\d{4}) (\d{2}):(\d{2}):(\d{2})$/.exec(trimmed);
   if (slash) {
     const [, mm, dd, yyyy, hh, min, sec] = slash;
-    parsed = Date.UTC(Number(yyyy), Number(mm) - 1, Number(dd), Number(hh), Number(min), Number(sec));
-    return parsed;
-  }
-
-  const dash = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/.exec(trimmed);
-  if (dash) {
-    const [, yyyy, mm, dd, hh, min, sec] = dash;
     return Date.UTC(Number(yyyy), Number(mm) - 1, Number(dd), Number(hh), Number(min), Number(sec));
   }
+
+  const isoNoOffset = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/.exec(trimmed);
+  if (isoNoOffset) {
+    const [, yyyy, mm, dd, hh, min, sec] = isoNoOffset;
+    return Date.UTC(Number(yyyy), Number(mm) - 1, Number(dd), Number(hh), Number(min), Number(sec));
+  }
+
+  const withOffset = trimmed.replace(/(\+\d{4})$/, '+00:00');
+  const parsed = Date.parse(withOffset);
+  if (!Number.isNaN(parsed)) return parsed;
+
   return undefined;
 }
 
