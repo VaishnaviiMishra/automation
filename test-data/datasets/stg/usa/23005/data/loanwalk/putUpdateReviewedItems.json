@@ -3,6 +3,10 @@
   "itemEzId": "230054002168",
   "screenSizeAttributeKey": "Screen size (inches)",
   "screenSizeValues": ["13", "15"],
+  "expectedDropPriceByScreenSize": {
+    "13": 229.99,
+    "15": 229.99
+  },
   "headers": {
     "Content-Type": "application/json"
   },

@@ -1,0 +1,53 @@
+{
+    "cartContext": {
+        "employeeEzId": "600004510",
+        "locationEzId": "23005"
+    },
+    "item": {
+        "itemEzId": "230054002168",
+        "contractEzId": "0324222",
+        "contractType": "LOAN",
+        "reviewStatus": "REVIEWED",
+        "currentVersion": 0,
+        "reviewedDttmLocation": "10/28/2026 06:51:00",
+        "reviewedDttmUTC": "10/28/2026 11:51:00",
+        "itemChanges": {
+            "isFirearmCertified": null,
+            "fields": [],
+            "features": [
+                {
+                    "objectId": "1167325125",
+                    "listId": "1218",
+                    "newVal": "15",
+                    "oldVal": "13",
+                    "flag": null,
+                    "modifiedByEmpRole": "168020",
+                    "flaggedByEmpRole": null,
+                    "featureType": "SL",
+                    "elementId": null,
+                    "attributeKey": "Screen size (inches)",
+                    "isDeleted": false
+                }
+            ],
+            "stones": [],
+            "comments": [
+                {
+                    "type": "USER",
+                    "comments": "Screen size corrected from 13 to 15",
+                    "commentedBy": "600004510",
+                    "createdOn": "10/28/2026 11:51:00"
+                }
+            ],
+            "media": null,
+            "scanRequired": false,
+            "dmwalkRequired": null,
+            "dmwalkDttm": "2026-10-28T11:51:00+0000",
+            "scanDttm": "2026-10-28T11:51:00+0000",
+            "dmwalkFlagDttm": null,
+            "dmwalkDuration": null,
+            "scanDuration": null,
+            "scanSkipReasonCode": null,
+            "walkDuration": null
+        }
+    }
+}

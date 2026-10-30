@@ -1,0 +1,59 @@
+{
+    "success": true,
+    "messages": [],
+    "payload": {
+        "reviewedItems": [
+            {
+                "contractType": "LOAN",
+                "contractEzId": "0324222",
+                "itemEzId": "230054002168",
+                "locationEzId": "23005",
+                "contractDate": "02/20/2026 18:55:33",
+                "reviewStatus": "REVIEWED",
+                "reviewDttm": "10/28/2026 06:51:00",
+                "lastReviewedEmployeeEzId": "600004510",
+                "itemChanges": {
+                    "isFirearmCertified": null,
+                    "fields": [],
+                    "features": [
+                        {
+                            "objectId": "1167325125",
+                            "listId": "1218",
+                            "newVal": "15",
+                            "oldVal": "13",
+                            "flag": null,
+                            "modifiedByEmpRole": "168020",
+                            "flaggedByEmpRole": null,
+                            "featureType": "SL",
+                            "elementId": null,
+                            "attributeKey": "Screen size (inches)",
+                            "isDeleted": false
+                        }
+                    ],
+                    "stones": [],
+                    "comments": [
+                        {
+                            "type": "USER",
+                            "comments": "Screen size corrected from 13 to 15",
+                            "commentedBy": "600004510",
+                            "createdOn": "10/28/2026 11:51:00"
+                        }
+                    ],
+                    "media": null,
+                    "scanRequired": false,
+                    "dmwalkRequired": null,
+                    "dmwalkDttm": "2026-10-28T11:51:00+0000",
+                    "scanDttm": "2026-10-28T11:51:00+0000",
+                    "dmwalkFlagDttm": null,
+                    "dmwalkDuration": null,
+                    "scanDuration": null,
+                    "scanSkipReasonCode": null,
+                    "walkDuration": null
+                },
+                "loanwalkPrice": 0,
+                "originalPrice": 229.99,
+                "dropPrice": 229.99
+            }
+        ]
+    }
+}
