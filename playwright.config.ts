@@ -11,7 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '.env'), override: true });
 
-/** Teams Adaptive Card only when TEAMS_NOTIFY=1 (npm run test:teams:stg:usa:23005). */
+/** Teams Adaptive Card when TEAMS_NOTIFY=1 (e.g. scheduled run before npm run gmwalk). */
 function buildReporters(): ReporterDescription[] {
   const reporters: ReporterDescription[] = [
     ['list'],

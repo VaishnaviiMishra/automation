@@ -38,18 +38,19 @@ npm run teams:verify-webhook
 
 A short test card should appear in Teams.
 
-## 5. Run tests and post to Teams
+## 5. Run chain and post to Teams
 
-`TEAMS_NOTIFY=1` is set by the npm script below (see [`playwright.config.ts`](playwright.config.ts)).
+`TEAMS_NOTIFY=1` enables the Teams reporter (see [`playwright.config.ts`](playwright.config.ts)).
 
 ```bat
-npm run test:teams:stg:usa:23005
+set TEAMS_NOTIFY=1
+npm run gmwalk
 ```
 
-Runs **without** Teams:
+Without Teams:
 
 ```bat
-npm run test:loanwalk:stg:usa:23005
+npm run gmwalk
 ```
 
 ### What appears on the card
@@ -70,7 +71,7 @@ run_scheduled.bat
 run_scheduled.bat stg-usa-23005
 ```
 
-Logs: `logs\teams-stg-usa-23005-<timestamp>.log`
+Logs: `logs\teams-stg-usa-23005-<timestamp>.log` (sets `TEAMS_NOTIFY=1` and runs `npm run gmwalk`).
 
 ### Register a daily task (recommended)
 
@@ -116,16 +117,15 @@ schtasks /Run /TN LoanwalkApiTests-STG-USA-23005
 
 | Issue | Check |
 |--------|--------|
-| No card | `TEAMS_WEBHOOK_URL` in `.env`; use `npm run test:teams:stg:usa:23005` (not `test:loanwalk`) |
+| No card | `TEAMS_WEBHOOK_URL` in `.env`; `TEAMS_NOTIFY=1` before `npm run gmwalk` |
 | Scheduled run, no card | Open latest `logs\teams-*.log`; confirm VPN/network to STG |
-| `[teams-detail] Skipping Teams post — unsupported matrix` | Profile must be `stg-usa-23005` (npm script sets `ENV` / `COUNTRY` / `STORE`) |
+| `[teams-detail] Skipping Teams post — unsupported matrix` | Chain uses `ENV=stg`, `COUNTRY=usa`, `STORE=23005` (see `gmwalk` in `package.json`) |
 | Empty validation notes | Specs must attach **Validation Summary** or **Required Attributes Validated ✅** |
 | Debug | `TEAMS_DEBUG=1` in `.env` |
 
-## npm scripts
+## npm scripts (Teams-related)
 
-| Script | Teams card |
-|--------|------------|
-| `test:teams:stg:usa:23005` / `test:teams` | Yes |
-| `test:loanwalk:stg:usa:23005` | No |
-| `teams:verify-webhook` | Test card only |
+| Script | Purpose |
+|--------|---------|
+| `gmwalk` | Full test chain (Teams only if `TEAMS_NOTIFY=1`) |
+| `teams:verify-webhook` | One test card, no Playwright run |

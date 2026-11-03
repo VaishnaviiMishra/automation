@@ -50,7 +50,8 @@ if not exist "%REPO_ROOT%\node_modules\@playwright\test\cli.js" (
 )
 
 if /I "%PROFILE%"=="stg-usa-23005" (
-  set "NPM_SCRIPT=test:teams:stg:usa:23005"
+  set "NPM_SCRIPT=gmwalk"
+  set "TEAMS_NOTIFY=1"
 ) else (
   echo [ERROR] Unknown profile: %PROFILE%>> "%LOG_FILE%"
   echo         Use stg-usa-23005

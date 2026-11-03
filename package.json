@@ -7,16 +7,9 @@
     "clean:reports": "rimraf test-results allure-results playwright-report allure-report",
     "clean:allure": "rimraf allure-results allure-report",
 
-    "test": "node scripts/run-env.mjs ENV=stg COUNTRY=usa STORE=23005 -- tests/loanwalk",
-    "test:loanwalk": "node scripts/run-env.mjs ENV=stg COUNTRY=usa STORE=23005 -- tests/loanwalk",
-    "test:loanwalk:stg:usa:23005": "node scripts/run-env.mjs ENV=stg COUNTRY=usa STORE=23005 -- tests/loanwalk",
-    "test:teams:stg:usa:23005": "node scripts/run-env.mjs ENV=stg COUNTRY=usa STORE=23005 TEAMS_NOTIFY=1 -- tests/loanwalk",
-    "test:teams": "npm run test:teams:stg:usa:23005",
+    "gmwalk": "node scripts/run-env.mjs ENV=stg COUNTRY=usa STORE=23005 -- tests/loanwalk/getContractsByType.spec.ts tests/loanwalk/putUpdateReviewedItems.spec.ts tests/loanwalk/postReviewedItemPriceDrop.spec.ts --workers=1",
+
     "teams:verify-webhook": "node scripts/verify-teams-webhook.mjs",
-
-    "test:ui": "node scripts/run-env.mjs ENV=stg COUNTRY=usa STORE=23005 -- tests/loanwalk --ui",
-    "test:debug": "node scripts/run-env.mjs ENV=stg COUNTRY=usa STORE=23005 -- tests/loanwalk --debug",
-
     "report": "npx allure generate ./allure-results --clean && npx allure open ./allure-report"
   },
   "keywords": [],

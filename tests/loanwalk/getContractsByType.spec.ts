@@ -6,9 +6,13 @@ import {
   resolveEnvsForPilot,
   resolveStoresForPilot,
 } from '../../utils/testContext';
+import { writeLoanwalkChainState } from './helpers/loanwalkChainState';
+import { readScreenSizeFromGet, type LoanContract, type UpdateDataset } from './helpers/loanwalkReview';
 
 const ENDPOINT_KEY = 'getContractsByType' as const;
 const DATA_KEY = 'loanwalk/getContractsByType';
+const PUT_DATA_KEY = 'loanwalk/putUpdateReviewedItems';
+const POST_PARAMS_KEY = 'loanwalk/postReviewedItemPriceDrop';
 
 const PILOT_ENVS = ['stg'];
 const PILOT_COUNTRIES = ['usa'];
@@ -23,6 +27,10 @@ test.describe('Loanwalk Contracts By Type', () => {
     for (const country of resolveCountriesForPilot(PILOT_COUNTRIES)) {
       for (const store of resolveStoresForPilot(STORE_MAP[country] ?? [])) {
         if (!datasetExists({ env, country, store, dataKey: DATA_KEY })) continue;
+
+        const chainEnabled =
+          datasetExists({ env, country, store, dataKey: PUT_DATA_KEY }) &&
+          datasetExists({ env, country, store, dataKey: POST_PARAMS_KEY });
 
         test(`GET contracts by type — ENV=${env} COUNTRY=${country} STORE=${store}`, async ({ request }, testInfo) => {
           const ctx = createTestContext({ env, country, store });
@@ -81,11 +89,59 @@ test.describe('Loanwalk Contracts By Type', () => {
             expect(itemCount).toBe(totalRecords);
           });
 
+          let chainLines: string[] = [];
+          if (chainEnabled) {
+            const flow = ctx.data<UpdateDataset>(PUT_DATA_KEY);
+            const contractsList = contracts as LoanContract[];
+            const screenHit = readScreenSizeFromGet(
+              contractsList,
+              flow.contractEzId,
+              flow.itemEzId,
+              flow.screenSizeAttributeKey
+            );
+
+            await testInfo.attach('Chain — target item screen (GET)', {
+              body: screenHit
+                ? `current: ${screenHit.current} (${screenHit.source})`
+                : 'screen size not found on contract item',
+              contentType: 'text/plain',
+            });
+
+            if (!screenHit?.current) {
+              throw new Error(
+                `Test Failed: Could not read screen size for chain item.\n` +
+                  `Expected: screen on contract ${flow.contractEzId} item ${flow.itemEzId}\n` +
+                  `Received: missing\n` +
+                  `What should have been: GET must expose current screen for PUT/POST chain.`
+              );
+            }
+
+            await test.step('Store current screen size for PUT and POST chain', async () => {
+              expect(screenHit.current).toMatch(/^(13|15)$/);
+            });
+
+            writeLoanwalkChainState({
+              env,
+              country,
+              store,
+              contractEzId: flow.contractEzId,
+              itemEzId: flow.itemEzId,
+              screenSizeAttributeKey: flow.screenSizeAttributeKey,
+              initialScreenSize: screenHit.current,
+              step: 'get',
+            });
+
+            chainLines = [
+              `✅ Stored initialScreenSize ${screenHit.current} for PUT → POST chain`,
+            ];
+          }
+
           await testInfo.attach('Required Attributes Validated ✅', {
             body: [
               'Use case checks for GET contracts by type:',
               '✅ HTTP 200',
               `✅ Item count matches totalRecords (${itemCount} === ${totalRecords})`,
+              ...chainLines,
             ].join('\n'),
             contentType: 'text/plain',
           });
@@ -103,6 +159,7 @@ test.describe('Loanwalk Contracts By Type', () => {
               `Items counted: ${itemCount}`,
               `totalRecords: ${totalRecords}`,
               `Match: ${itemCount} === ${totalRecords}`,
+              chainEnabled ? `Chain: initialScreenSize stored for ${env}/${country}/${store}` : 'Chain: disabled (missing PUT/POST datasets)',
             ].join('\n'),
             contentType: 'text/plain',
           });
