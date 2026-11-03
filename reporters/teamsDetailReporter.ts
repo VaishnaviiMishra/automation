@@ -308,12 +308,12 @@ function domainSections(domain: string, rows: TestRow[]): Record<string, unknown
 }
 
 function cardTitle(): string {
-  const env = (process.env.ENV ?? 'qa').toUpperCase();
+  const env = (process.env.ENV ?? 'stg').toUpperCase();
   const country = (process.env.COUNTRY ?? 'usa').toLowerCase();
   const store = process.env.STORE ?? '23005';
   const countryLabel =
     country === 'mexico' ? 'Mexico' : country === 'usa' ? 'USA' : country.toUpperCase();
-  return `EZCorp API — ${countryLabel}: ${store} (${env})`;
+  return `Loanwalk API — ${countryLabel}: ${store} (${env})`;
 }
 
 function isAllowedMatrix(): boolean {

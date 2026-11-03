@@ -11,6 +11,8 @@
     "test:loanwalk": "node scripts/run-env.mjs ENV=stg COUNTRY=usa STORE=23005 -- tests/loanwalk",
     "test:loanwalk:stg:usa:23005": "node scripts/run-env.mjs ENV=stg COUNTRY=usa STORE=23005 -- tests/loanwalk",
     "test:teams:stg:usa:23005": "node scripts/run-env.mjs ENV=stg COUNTRY=usa STORE=23005 TEAMS_NOTIFY=1 -- tests/loanwalk",
+    "test:teams": "npm run test:teams:stg:usa:23005",
+    "teams:verify-webhook": "node scripts/verify-teams-webhook.mjs",
 
     "test:ui": "node scripts/run-env.mjs ENV=stg COUNTRY=usa STORE=23005 -- tests/loanwalk --ui",
     "test:debug": "node scripts/run-env.mjs ENV=stg COUNTRY=usa STORE=23005 -- tests/loanwalk --debug",

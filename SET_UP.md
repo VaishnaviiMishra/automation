@@ -30,15 +30,19 @@ Store credentials (base URL, header names, which env var holds the key) are in `
 
 ## Run
 
-```bash
+```bat
 npm run test:loanwalk:stg:usa:23005
 ```
 
-Teams Adaptive Card (needs `TEAMS_WEBHOOK_URL`):
+Teams Adaptive Card (needs `TEAMS_WEBHOOK_URL` in `.env`):
 
-```bash
+```bat
+npm run teams:verify-webhook
 npm run test:teams:stg:usa:23005
+scripts\run_scheduled.bat
 ```
+
+Windows webhook + Task Scheduler: [TEAMS_SETUP.md](TEAMS_SETUP.md).
 
 One spec:
 
