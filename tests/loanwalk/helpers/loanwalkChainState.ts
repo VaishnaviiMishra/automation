@@ -62,7 +62,7 @@ export function requireChainAfterGet(env: string, country: string, store: string
   if (!state) {
     throw new Error(
       `Test Failed: Loanwalk chain state is missing.\n` +
-        `Expected: Run GET first (getContractsByType.spec.ts) for ENV=${env} COUNTRY=${country} STORE=${store}\n` +
+        `Expected: Run GET first (01-getContractsByType.spec.ts) for ENV=${env} COUNTRY=${country} STORE=${store}\n` +
         `Received: no usable chain file under test-results/loanwalk-chain/\n` +
         `What should have been: GET stores the current screen size, or run the PUT spec alone (standalone GET in that spec).`
     );

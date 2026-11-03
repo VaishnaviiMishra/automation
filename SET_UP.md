@@ -42,7 +42,7 @@ Teams card after the chain: set `TEAMS_NOTIFY=1` in the shell, then `npm run gmw
 npm run teams:verify-webhook
 ```
 
-Single specs: use `node scripts/run-env.mjs ENV=stg COUNTRY=usa STORE=23005 -- tests/loanwalk/<spec>.spec.ts` (add env vars such as `LOANWALK_PUT_STANDALONE=1` before `--` when needed).
+Single specs: use `node scripts/run-env.mjs ENV=stg COUNTRY=usa STORE=23005 -- tests/loanwalk/02-putUpdateReviewedItems.spec.ts` (add env vars such as `LOANWALK_PUT_STANDALONE=1` before `--` when needed). Chain files are prefixed `01-`, `02-`, `03-` so `tests/loanwalk` always runs GET → PUT → POST.
 
 ## Adding a use case
 

@@ -70,7 +70,7 @@ test.describe('Loanwalk PUT update reviewed items', () => {
             initialScreenSize = chained.initialScreenSize;
             chainBase = chained;
             await testInfo.attach('PUT mode', {
-              body: 'chain — using initialScreenSize from getContractsByType.spec.ts',
+              body: 'chain — using initialScreenSize from 01-getContractsByType.spec.ts',
               contentType: 'text/plain',
             });
           } else {
