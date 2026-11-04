@@ -54,8 +54,8 @@ test.describe('GMwalk — loanwalk API flow', () => {
             updatedScreenSize: '',
           };
 
-          // ─── GET (1): contracts list count ─────────────────────────────────────
-          test('GET — contracts count matches pageable.totalRecords', async ({ request }, testInfo) => {
+          // ─── Step 1 — GET: contracts list count ──────────────────────────────────
+          test('Step 1 — GET — contracts count matches pageable.totalRecords', async ({ request }, testInfo) => {
             const ctx = createTestContext({ env, country, store });
             const params = ctx.params(GET_ENDPOINT_KEY);
             const getUrl = ctx.url(GET_ENDPOINT_KEY);
@@ -80,7 +80,7 @@ test.describe('GMwalk — loanwalk API flow', () => {
 
             await testInfo.attach('Required Attributes Validated ✅', {
               body: [
-                'GMwalk — GET (contracts count):',
+                'GMwalk Step 1 — GET (contracts count):',
                 '✅ HTTP 200',
                 `✅ payload.contracts length === pageable.totalRecords (${itemCount})`,
               ].join('\n'),
@@ -89,7 +89,7 @@ test.describe('GMwalk — loanwalk API flow', () => {
 
             await testInfo.attach('Validation Summary', {
               body: [
-                'Scenario: GET — contract list count',
+                'Scenario: Step 1 — GET — contract list count',
                 `ENV: ${env}`,
                 `Store: ${params.storeId}`,
                 `contractType: ${params.contractType}`,
@@ -104,8 +104,8 @@ test.describe('GMwalk — loanwalk API flow', () => {
             });
           });
 
-          // ─── GET (2): screen size for flow item ────────────────────────────────
-          test('GET — read current screen size for review item', async ({ request }, testInfo) => {
+          // ─── Step 2 — GET: screen size for flow item ─────────────────────────────
+          test('Step 2 — GET — read current screen size for review item', async ({ request }, testInfo) => {
             const ctx = createTestContext({ env, country, store });
             const flow = ctx.data<UpdateDataset>(PUT_DATA_KEY);
             const getUrl = ctx.url(GET_ENDPOINT_KEY);
@@ -136,7 +136,7 @@ test.describe('GMwalk — loanwalk API flow', () => {
 
             await testInfo.attach('Required Attributes Validated ✅', {
               body: [
-                'GMwalk — GET (screen size):',
+                'GMwalk Step 2 — GET (screen size):',
                 `✅ Screen size ${shared.initialScreenSize} on target item`,
                 '✅ Value is 13 or 15 (toggleable in PUT)',
               ].join('\n'),
@@ -145,7 +145,7 @@ test.describe('GMwalk — loanwalk API flow', () => {
 
             await testInfo.attach('Validation Summary', {
               body: [
-                'Scenario: GET — screen size for PUT/POST',
+                'Scenario: Step 2 — GET — screen size for PUT/POST',
                 `ENV: ${env}`,
                 `contractEzId: ${flow.contractEzId}`,
                 `itemEzId: ${flow.itemEzId}`,
@@ -157,9 +157,9 @@ test.describe('GMwalk — loanwalk API flow', () => {
             });
           });
 
-          // ─── PUT: toggle screen size ─────────────────────────────────────────
-          test('PUT — update reviewed item screen size', async ({ request }, testInfo) => {
-            expect(shared.initialScreenSize, 'Run GET screen test first in this serial suite').toBeTruthy();
+          // ─── Step 3 — PUT: toggle screen size ──────────────────────────────────
+          test('Step 3 — PUT — update reviewed item screen size', async ({ request }, testInfo) => {
+            expect(shared.initialScreenSize, 'Step 2 must pass before Step 3 PUT').toBeTruthy();
 
             const ctx = createTestContext({ env, country, store });
             const flow = ctx.data<UpdateDataset>(PUT_DATA_KEY);
@@ -209,7 +209,7 @@ test.describe('GMwalk — loanwalk API flow', () => {
 
             await testInfo.attach('Required Attributes Validated ✅', {
               body: [
-                'GMwalk — PUT (update reviewed items):',
+                'GMwalk Step 3 — PUT (update reviewed items):',
                 `✅ Used GET screen ${shared.initialScreenSize}`,
                 `✅ PUT ${decision!.oldVal} → ${decision!.newVal}`,
                 `✅ Follow-up GET shows screen ${shared.updatedScreenSize}`,
@@ -219,7 +219,7 @@ test.describe('GMwalk — loanwalk API flow', () => {
 
             await testInfo.attach('Validation Summary', {
               body: [
-                'Scenario: PUT — screen size toggle',
+                'Scenario: Step 3 — PUT — screen size toggle',
                 `ENV: ${env}`,
                 `contractEzId: ${flow.contractEzId}`,
                 `itemEzId: ${flow.itemEzId}`,
@@ -231,10 +231,10 @@ test.describe('GMwalk — loanwalk API flow', () => {
             });
           });
 
-          // ─── POST: drop price + screen on response ───────────────────────────
-          test('POST — drop price for updated screen size', async ({ request }, testInfo) => {
-            expect(shared.initialScreenSize, 'Prior GET tests must pass').toBeTruthy();
-            expect(shared.updatedScreenSize, 'Prior PUT test must pass').toBeTruthy();
+          // ─── Step 4 — POST: drop price + screen on response ────────────────────
+          test('Step 4 — POST — drop price for updated screen size', async ({ request }, testInfo) => {
+            expect(shared.initialScreenSize, 'Steps 1–2 must pass before Step 4 POST').toBeTruthy();
+            expect(shared.updatedScreenSize, 'Step 3 PUT must pass before Step 4 POST').toBeTruthy();
 
             const ctx = createTestContext({ env, country, store });
             const flow = ctx.data<UpdateDataset>(PUT_DATA_KEY);
@@ -280,7 +280,7 @@ test.describe('GMwalk — loanwalk API flow', () => {
 
             await testInfo.attach('Required Attributes Validated ✅', {
               body: [
-                'GMwalk — POST (reviewed item price drop):',
+                'GMwalk Step 4 — POST (reviewed item price drop):',
                 `✅ Response newVal ${screenFromResponse} === PUT screen ${shared.updatedScreenSize}`,
                 `✅ Response newVal ≠ GET screen ${shared.initialScreenSize}`,
                 `✅ dropPrice for screen ${shared.updatedScreenSize}`,
@@ -290,7 +290,7 @@ test.describe('GMwalk — loanwalk API flow', () => {
 
             await testInfo.attach('Validation Summary', {
               body: [
-                'Scenario: POST — drop price after screen update',
+                'Scenario: Step 4 — POST — drop price after screen update',
                 `ENV: ${env}`,
                 `Store: ${storeId}`,
                 `contractEzId: ${flow.contractEzId}`,

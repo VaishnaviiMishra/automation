@@ -34,7 +34,7 @@ Store credentials (base URL, header names, which env var holds the key) are in `
 npm run gmwalk
 ```
 
-Runs four serial tests in `GMwalk.spec.ts`: GET count, GET screen, PUT, POST.
+Runs four serial tests in `GMwalk.spec.ts`: Step 1 GET count, Step 2 GET screen, Step 3 PUT, Step 4 POST.
 
 Teams card after the chain: `npm run gmwalk:teams` (or `npm run lnwalk:teams`). Needs `TEAMS_WEBHOOK_URL` in `.env`. Scheduled: [TEAMS_SETUP.md](TEAMS_SETUP.md) — `scripts\run_scheduled.bat`.
 
@@ -42,7 +42,7 @@ Teams card after the chain: `npm run gmwalk:teams` (or `npm run lnwalk:teams`). 
 npm run teams:verify-webhook
 ```
 
-One scenario only: use Playwright `--grep` on the test title, e.g. `node scripts/run-env.mjs ENV=stg COUNTRY=usa STORE=23005 -- tests/loanwalk/GMwalk.spec.ts --grep "PUT —"`.
+One scenario only: use Playwright `--grep`, e.g. `--grep "Step 3 — PUT"`.
 
 ## Adding a use case
 
