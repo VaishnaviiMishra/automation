@@ -2,7 +2,7 @@
 
 Playwright API suite for **loanwalk** use cases. Configured store for now: **STG USA 23005**.
 
-Specs live in `tests/loanwalk`. Each spec checks a use case (the outcome), not every response attribute. Add another env or store later by copying `test-data/datasets/stg/usa/23005/`. Extend the **`gmwalk`** script in `package.json` when a new spec belongs in the chain; run single specs with `node scripts/run-env.mjs` yourself.
+Specs live in `tests/loanwalk`. The end-to-end flow is **`GMwalk.spec.ts`** (serial GET → PUT → POST with separate Allure/Teams attachments per scenario). Add another env or store later by copying `test-data/datasets/stg/usa/23005/`.
 
 ## Requirements
 
@@ -30,19 +30,19 @@ Store credentials (base URL, header names, which env var holds the key) are in `
 
 ## Run
 
-Full chain (GET → PUT → POST, `--workers=1`):
-
 ```bat
 npm run gmwalk
 ```
 
-Teams card after the chain: set `TEAMS_NOTIFY=1` in the shell, then `npm run gmwalk`. Scheduled runs: [TEAMS_SETUP.md](TEAMS_SETUP.md) (`scripts\run_scheduled.bat` sets `TEAMS_NOTIFY=1` and calls `gmwalk`).
+Runs four serial tests in `GMwalk.spec.ts`: GET count, GET screen, PUT, POST.
+
+Teams card after the chain: `npm run gmwalk:teams` (or `npm run lnwalk:teams`). Needs `TEAMS_WEBHOOK_URL` in `.env`. Scheduled: [TEAMS_SETUP.md](TEAMS_SETUP.md) — `scripts\run_scheduled.bat`.
 
 ```bat
 npm run teams:verify-webhook
 ```
 
-Single specs: use `node scripts/run-env.mjs ENV=stg COUNTRY=usa STORE=23005 -- tests/loanwalk/02-putUpdateReviewedItems.spec.ts` (add env vars such as `LOANWALK_PUT_STANDALONE=1` before `--` when needed). Chain files are prefixed `01-`, `02-`, `03-` so `tests/loanwalk` always runs GET → PUT → POST.
+One scenario only: use Playwright `--grep` on the test title, e.g. `node scripts/run-env.mjs ENV=stg COUNTRY=usa STORE=23005 -- tests/loanwalk/GMwalk.spec.ts --grep "PUT —"`.
 
 ## Adding a use case
 

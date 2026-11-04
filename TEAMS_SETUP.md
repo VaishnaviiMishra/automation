@@ -43,15 +43,10 @@ A short test card should appear in Teams.
 `TEAMS_NOTIFY=1` enables the Teams reporter (see [`playwright.config.ts`](playwright.config.ts)).
 
 ```bat
-set TEAMS_NOTIFY=1
-npm run gmwalk
+npm run gmwalk:teams
 ```
 
-Without Teams:
-
-```bat
-npm run gmwalk
-```
+Same as `npm run lnwalk:teams`. Without Teams: `npm run gmwalk`.
 
 ### What appears on the card
 
@@ -127,5 +122,6 @@ schtasks /Run /TN LoanwalkApiTests-STG-USA-23005
 
 | Script | Purpose |
 |--------|---------|
-| `gmwalk` | Full test chain (Teams only if `TEAMS_NOTIFY=1`) |
+| `gmwalk:teams` / `lnwalk:teams` | Chain + Adaptive Card |
+| `gmwalk` / `lnwalk` | Chain, no Teams |
 | `teams:verify-webhook` | One test card, no Playwright run |

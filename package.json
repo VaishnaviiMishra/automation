@@ -7,8 +7,10 @@
     "clean:reports": "rimraf test-results allure-results playwright-report allure-report",
     "clean:allure": "rimraf allure-results allure-report",
 
-    "gmwalk": "node scripts/run-env.mjs ENV=stg COUNTRY=usa STORE=23005 -- tests/loanwalk --workers=1",
+    "gmwalk": "node scripts/run-env.mjs ENV=stg COUNTRY=usa STORE=23005 -- tests/loanwalk/GMwalk.spec.ts",
+    "gmwalk:teams": "node scripts/run-env.mjs ENV=stg COUNTRY=usa STORE=23005 TEAMS_NOTIFY=1 -- tests/loanwalk/GMwalk.spec.ts",
     "lnwalk": "npm run gmwalk",
+    "lnwalk:teams": "npm run gmwalk:teams",
 
     "teams:verify-webhook": "node scripts/verify-teams-webhook.mjs",
     "report": "npx allure generate ./allure-results --clean && npx allure open ./allure-report"
